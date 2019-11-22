@@ -152,7 +152,7 @@ class ColorizationModel(nn.Module):
         # input shape: (-1, 128, H/2, W/2)
         self.conv10_up = \
             nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=3, stride=2, padding=1, dilation=1)
-        self.conv10_shortcut2 = 
+        self.conv10_shortcut1 = 
             nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, dilation=1)
 
         # input shape: (-1, 64, H, W)
@@ -224,22 +224,22 @@ class ColorizationModel(nn.Module):
         conv4_plus_global = torch.add(conv4, global_output)
         conv5 = self.conv5(conv4_plus_global)
         conv6 = self.conv6(conv5)
-        conv7 = self.conv6(conv6)
+        conv7 = self.conv7(conv6)
 
         conv8_up = self.conv8_up(conv7)
         conv8_short3 = self.conv8_shortcut3(conv3)
         conv8_in = torch.add(conv8_up, alpha=0.5, conv8_short3)
-        conv8 = self.conv6(conv8_in)
+        conv8 = self.conv8(conv8_in)
 
         conv9_up = self.conv9_up(conv8)
         conv9_short2 = self.conv9_shortcut2(conv2)
         conv9_in = torch.add(conv9_up, alpha=0.5, conv9_short2)
-        conv9 = self.conv6(conv9_in)
+        conv9 = self.conv9(conv9_in)
 
         conv10_up = self.conv10_up(conv9)
         conv10_short1 = self.conv10_shortcut1(conv1)
         conv10_in = torch.add(conv10_up, alpha=0.5, conv10_short1)
-        conv10 = self.conv6(conv10_in)
+        conv10 = self.conv10(conv10_in)
 
         main_output = self.main_out(conv10)
 
