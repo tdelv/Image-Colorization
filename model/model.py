@@ -14,7 +14,7 @@ class ColorizationModel(nn.Module):
         # Global Hints Network
 
         # input shape: (-1, 316, 1, 1)
-        global_conv = nn.Sequential([
+        self.global_conv = nn.Sequential([
             nn.Conv2d(in_channels=316, out_channels=512, kernel_size=1, stride=1, padding=0, dilation=1),
             nn.ReLU(),
             nn.Conv2d(in_channels=512, out_channels=512, kernel_size=1, stride=1, padding=0, dilation=1),
@@ -31,7 +31,7 @@ class ColorizationModel(nn.Module):
         # conv1
 
         # input shape: (-1, 4, H, W)
-        conv1 = nn.Sequential([
+        self.conv1 = nn.Sequential([
             nn.Conv2d(in_channels=4, out_channels=64, kernel_size=3, stride=1, padding=1, dilation=1),
             nn.ReLU(),
             nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, dilation=1),
@@ -42,7 +42,7 @@ class ColorizationModel(nn.Module):
         # conv2
 
         # input shape: (-1, 64, H, W)
-        conv2 = nn.Sequential([
+        self.conv2 = nn.Sequential([
             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, padding=1, dilation=1),
             nn.ReLU(),
             nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1, dilation=1),
@@ -53,7 +53,7 @@ class ColorizationModel(nn.Module):
         # conv3
 
         # input shape: (-1, 128, H/2, W/2)
-        conv3 = nn.Sequential([
+        self.conv3 = nn.Sequential([
             nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, padding=1, dilation=1),
             nn.ReLU(),
             nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1, dilation=1),
@@ -66,7 +66,7 @@ class ColorizationModel(nn.Module):
         # conv4
 
         # input shape: (-1, 256, H/4, W/4)
-        conv4 = nn.Sequential([
+        self.conv4 = nn.Sequential([
             nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=2, padding=1, dilation=1),
             nn.ReLU(),
             nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1, dilation=1),
@@ -79,7 +79,7 @@ class ColorizationModel(nn.Module):
         # conv5
 
         # input shape: (-1, 512, H/8, W/8)
-        conv5 = nn.Sequential([
+        self.conv5 = nn.Sequential([
             nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=2, dilation=2),
             nn.ReLU(),
             nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=2, dilation=2),
@@ -92,7 +92,7 @@ class ColorizationModel(nn.Module):
         # conv6
 
         # input shape: (-1, 512, H/8, W/8)
-        conv6 = nn.Sequential([
+        self.conv6 = nn.Sequential([
             nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=2, dilation=2),
             nn.ReLU(),
             nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=2, dilation=2),
@@ -105,7 +105,7 @@ class ColorizationModel(nn.Module):
         # conv7
 
         # input shape: (-1, 512, H/8, W/8)
-        conv7 = nn.Sequential([
+        self.conv7 = nn.Sequential([
             nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1, dilation=1),
             nn.ReLU(),
             nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1, dilation=1),
@@ -118,13 +118,13 @@ class ColorizationModel(nn.Module):
         # conv8
 
         # input shape: (-1, 512, H/8, W/8)
-        conv8_up = \
+        self.conv8_up = \
             nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=3, stride=2, padding=1, dilation=1)
-        conv8_shortcut3 = 
+        self.conv8_shortcut3 = 
             nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1, dilation=1)
 
         # input shape: (-1, 256, H/4, W/4)
-        conv8 = nn.Sequential([
+        self.conv8 = nn.Sequential([
             nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1, dilation=1),
             nn.ReLU(),
             nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1, dilation=1),
@@ -135,13 +135,13 @@ class ColorizationModel(nn.Module):
         # conv9
 
         # input shape: (-1, 256, H/4, W/4)
-        conv9_up = \
+        self.conv9_up = \
             nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, stride=2, padding=1, dilation=1)
-        conv9_shortcut2 = 
+        self.conv9_shortcut2 = 
             nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1, dilation=1)
 
         # input shape: (-1, 128, H/2, W/2)
-        conv9 = nn.Sequential([
+        self.conv9 = nn.Sequential([
             nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1, dilation=1),
             nn.ReLU(),
             nn.BatchNorm2d(128)])
@@ -150,20 +150,20 @@ class ColorizationModel(nn.Module):
         # conv10
 
         # input shape: (-1, 128, H/2, W/2)
-        conv10_up = \
+        self.conv10_up = \
             nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=3, stride=2, padding=1, dilation=1)
-        conv10_shortcut2 = 
+        self.conv10_shortcut2 = 
             nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, dilation=1)
 
         # input shape: (-1, 64, H, W)
-        conv10 = nn.Sequential([
+        self.conv10 = nn.Sequential([
             nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, dilation=1),
             # nn.ReLU(),
             nn.BatchNorm2d(64)])
         # output shape: (-1, 64, H, W)
 
         # main_out
-        main_out = nn.Sequential([
+        self.main_out = nn.Sequential([
             nn.Conv2d(in_channels=64, out_channels=2, kernel_size=1, stride=1, padding=0, dilation=1),
             nn.TanH()])
 
@@ -171,32 +171,89 @@ class ColorizationModel(nn.Module):
         # Local Hints Network
 
         # hint generators
-        hint3 = \
+        self.hint3 = \
             nn.Conv2D(in_channels=256, out_channels=384, kernel_size=3, stride=1, padding=1, dilation=1)
-        hint4 = \
+        self.hint4 = \
             nn.ConvTranspose2D(in_channels=512, out_channels=384, kernel_size=4, stride=2, padding=1, dilation=1)
-        hint5 = \
+        self.hint5 = \
             nn.ConvTranspose2D(in_channels=512, out_channels=384, kernel_size=4, stride=2, padding=1, dilation=1)
-        hint6 = \
+        self.hint6 = \
             nn.ConvTranspose2D(in_channels=512, out_channels=384, kernel_size=4, stride=2, padding=1, dilation=1)
-        hint7 = \
+        self.hint7 = \
             nn.ConvTranspose2D(in_channels=512, out_channels=384, kernel_size=4, stride=2, padding=1, dilation=1)
-        hint8 = \
+        self.hint8 = \
             nn.Conv2D(in_channels=256, out_channels=384, kernel_size=3, stride=1, padding=1, dilation=1)
         
         # hint cummulator
         # sum the above results
 
-        # input size: (-1, 384, H/4, W/4)
-        hint_network = nn.Sequential([
+        # input shape: (-1, 384, H/4, W/4)
+        self.hint_network = nn.Sequential([
             nn.ReLU(),
             nn.Conv2d(in_channels=384, out_channels=313, kernel_size=1, stride=1, padding=0, dilation=1),
             nn.ConvTranspose2d(in_channels=313, out_channels=313, kernel_size=4, stride=2, padding=1, group=313, bias=False),
             nn.ConvTranspose2d(in_channels=313, out_channels=313, kernel_size=4, stride=2, padding=1, group=313, bias=False),
             #nn.Mul(),
             nn.Softmax()])
-
+        # output shape: (-1, 313, H, W)
 
 
     def forward(self, grayscale_image, global_hints, local_hints, local_hints_mask):
-        pass
+        """
+        Parameters:
+        grayscale_image :: (-1, 1, H, W)
+        global_hints :: (-1, 316, 1, 1)
+        local_hints :: (-1, 2, H, W)
+        local_hints_mask :: (-1, 1, H, W)
+
+        Returns:
+        main_output :: (-1, 2, H, W)
+        hint_output :: (-1, 313, H, W)
+        """
+
+        # Global pass
+        global_output = self.global_conv(global_hints)
+
+        # Main pass
+        image_plus_hints = torch.cat((grayscale_image, local_hints, local_hints_mask), 1)
+
+        conv1 = self.conv1(image_plus_hints)
+        conv2 = self.conv2(conv1)
+        conv3 = self.conv3(conv2)
+        conv4 = self.conv4(conv3)
+        conv4_plus_global = torch.add(conv4, global_output)
+        conv5 = self.conv5(conv4_plus_global)
+        conv6 = self.conv6(conv5)
+        conv7 = self.conv6(conv6)
+
+        conv8_up = self.conv8_up(conv7)
+        conv8_short3 = self.conv8_shortcut3(conv3)
+        conv8_in = torch.add(conv8_up, alpha=0.5, conv8_short3)
+        conv8 = self.conv6(conv8_in)
+
+        conv9_up = self.conv9_up(conv8)
+        conv9_short2 = self.conv9_shortcut2(conv2)
+        conv9_in = torch.add(conv9_up, alpha=0.5, conv9_short2)
+        conv9 = self.conv6(conv9_in)
+
+        conv10_up = self.conv10_up(conv9)
+        conv10_short1 = self.conv10_shortcut1(conv1)
+        conv10_in = torch.add(conv10_up, alpha=0.5, conv10_short1)
+        conv10 = self.conv6(conv10_in)
+
+        main_output = self.main_out(conv10)
+
+        # Local pass
+        hint3 = self.hint3(conv3)
+        hint4 = self.hint3(conv4)
+        hint5 = self.hint3(conv5)
+        hint6 = self.hint3(conv6)
+        hint7 = self.hint3(conv7)
+        hint8 = self.hint3(conv8)
+        hint_total = torch.sum(torch.stack([
+            hint3, hint4, hint5, hint6, hint7, hint8]), dim=0)
+
+        hint_output = self.hint_network(hint_total)
+
+        return main_output, hint_output
+
