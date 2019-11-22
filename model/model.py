@@ -4,10 +4,7 @@ import torch.nn as nn
 
 class ColorizationModel(nn.Module):
 
-    def __init__(self, learning_rate = 1e-5):
-
-        # Hyperparameters
-        self.learning_rate = learning_rate
+    def __init__(self):
 
         # Trainable layers
 
