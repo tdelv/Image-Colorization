@@ -156,7 +156,7 @@ class ColorizationModel(nn.Module):
         # input shape: (-1, 64, H, W)
         self.conv10 = nn.Sequential(
             nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, dilation=1),
-            # nn.ReLU(),
+            nn.LeakyReLU(negative_slope=0.2),
             nn.BatchNorm2d(64))
         # output shape: (-1, 64, H, W)
 
@@ -209,6 +209,18 @@ class ColorizationModel(nn.Module):
         hint_output :: (-1, 313, H, W)
         """
 
+        # Add dimension for batch if single image given
+        for inp in (grayscale_image, global_hints, local_hints, local_hints_mask):
+            if len(inp.size()) == 3:
+                inp.unsqueeze_(0)
+
+        # Check input dims are correct
+        batch_size, _, height, width = grayscale_image.size()[2:]
+        assert grayscale_image.size() == (batch_size, 1, height, width)
+        assert global_hints.size() == (batch_size, 316, 1, 1)
+        assert local_hints.size() == (batch_size, 2, height, width)
+        assert local_hints_mask.size() == (batch_size, 1, height, width)
+
         # Global pass
         global_output = self.global_conv(global_hints)
 
@@ -252,6 +264,9 @@ class ColorizationModel(nn.Module):
             hint3, hint4, hint5, hint6, hint7, hint8]), dim=0)
 
         hint_output = self.hint_network(hint_total)
+
+        assert main_output.size() == (batch_size, 2, height, width)
+        assert hint_output.size() == (batch_size, 313, height, width)
 
         return main_output, hint_output
 
