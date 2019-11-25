@@ -1,4 +1,4 @@
-
+import torch
 
 def bw_image_to_tensor(img, type="RGB"):
     """
@@ -30,7 +30,24 @@ def local_hints_to_tensor(hints=[]):
     mask :: A tensor of shape (1, H, W) - representing which pixels are hinted
     """
 
-    pass
+    # TODO: get the image shape
+    h = -1 # temporary value
+    w = -1 # temporary value
+
+    hints_tensor = torch.zeros([2, h, w], dtype=torch.int32)
+    mask_tensor = torch.zeros([1, h, w], dtype=torch.int32)
+
+    for hint in hints:
+        # extracting x, y, a, b from the current hint
+        x, y = hint[0]
+        a, b = hint[1]
+        # storing the relevant info in the hints tensor
+        hints_tensor[0][x][y] = a
+        hints_tensor[1][x][y] = b
+        # marking this hint in the mask tensor
+        mask_tensor[0][x][y] = 1
+
+    return hints_tensor, mask_tensor
 
 
 def global_hint_to_tensor(img=None, type="RGB", saturation=None):
