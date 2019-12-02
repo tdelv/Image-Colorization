@@ -1,7 +1,48 @@
+import os
+import re
+import torch
+from model.model import ColorizationModel
+import data.training_preprocess as data
 
-def train(from_epoch, for_epochs):
-    pass
-    
+def train(epochs):
+    learning_rate = 1e-3
+
+    model = ColorizationModel()
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+    start_epoch = load_model(model, optimizer)
+    end_epoch = start_epoch + epochs
+
+    for epoch in range(start_epoch, end_epoch):
+        inputs, global_hints, local_hints, labels = data.load_epoch()
+        train_epoch(model, optimizer, inputs, global_hints, local_hints, labels)
+
+    save_model(model, optimizer, end_epoch)
+
+    return model
+
+def save_model(model, optimizer, epoch):
+    torch.save({'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict()}, 
+                "save_states/state-epoch-{epoch}.tar".format(epoch=epoch))
+
+
+def load_model(model, optimizer, epoch=None):
+    if epoch == None:
+        files = os.listdir("./save_states")
+        matches = map(lambda file: re.search("state-epoch-(.*).tar", file), files)
+        well_formed = filter(lambda s: file != None, matches)
+        epochs = list(map(lambda s: s.group(1), well_formed))
+        if len(epochs) == 0:
+            return 0
+        epoch = max(epochs)
+
+    checkpoint = torch.load("save_states/state-epoch{epoch}.tar".format(epoch=epoch))
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+    return epoch
 
 def train_epoch(model, optimizer, inputs, global_hints, local_hints, labels):
     '''
