@@ -88,7 +88,7 @@ def train_epoch(model, optimizer, inputs, global_hints, local_hints, labels):
     in zip(inputs, local_hints, global_hints, labels):
         optimizer.zero_grad()
 
-        outputs_batch = model(input_batch, global_hint_batch, local_hint_batch)
+        outputs_batch = model(input_batch, global_hint_batch, *local_hint_batch)
         loss_batch = loss(outputs_batch, labels_batch)
 
         loss_batch.backward()
