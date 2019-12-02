@@ -196,18 +196,39 @@ class ColorizationModel(nn.Module):
         # output shape: (-1, 313, H, W)
 
 
-    def forward(self, grayscale_image, global_hints, local_hints, local_hints_mask):
+    def forward(self, grayscale_image, global_hints=None, local_hints=None, local_hints_mask=None):
         """
         Parameters:
-        grayscale_image :: (-1, 1, H, W)
-        global_hints :: (-1, 316, 1, 1)
-        local_hints :: (-1, 2, H, W)
-        local_hints_mask :: (-1, 1, H, W)
+        grayscale_image :: Tensor(-1, 1, H, W)
+        global_hints (Optional) :: Tensor(-1, 316, 1, 1)
+        [
+            local_hints :: Tensor(-1, 2, H, W)
+            local_hints_mask :: Tensor(-1, 1, H, W)
+        OR
+            local_hints :: Tensor(-1, 3, H, W)
+            local_hints_mask :: None
+        OR
+            local_hints :: None
+            local_hints_mask :: None
+        ]
 
         Returns:
-        main_output :: (-1, 2, H, W)
-        hint_output :: (-1, 313, H, W)
+        main_output :: Tensor(-1, 2, H, W)
+        hint_output :: Tensor(-1, 313, H, W)
         """
+
+        batch_size, _, height, width = grayscale_image.size()
+
+        if global_hints == None:
+            global_hints = torch.zeros(batch_size, 316, 1, 1)
+        if local_hints == None:
+            assert local_hints_mask == None, "Can't provide mask without hints"
+            local_hints = torch.zeros(batch_size, 2, height, width)
+            local_hints_mask = torch.zeros(batch_size, 1, height, width)
+        elif local_hints_mask == None:
+            assert local_hints.shape(1) == 3
+            local_hints_mask = local_hints[:, 2:, :, :]
+            local_hints = local_hints[:, :2, :, :]
 
         # Add dimension for batch if single image given
         for inp in (grayscale_image, global_hints, local_hints, local_hints_mask):
@@ -215,7 +236,6 @@ class ColorizationModel(nn.Module):
                 inp.unsqueeze_(0)
 
         # Check input dims are correct
-        batch_size, _, height, width = grayscale_image.size()[2:]
         assert grayscale_image.size() == (batch_size, 1, height, width)
         assert global_hints.size() == (batch_size, 316, 1, 1)
         assert local_hints.size() == (batch_size, 2, height, width)
