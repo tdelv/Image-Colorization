@@ -10,8 +10,8 @@ def load_data(train_dataset="", batch_size=100, shuffle=True):
 	loader1, loader2, loader3, loader4 = itertools.tee(train_loader_lab, 4)
 
 	train_loader_inputs = map(lab_to_bw, loader1)
-	train_loader_local_hints = map(generate_local_hints, loader2)
-	train_loader_global_hints = map(generate_global_hints, loader3)
+	train_loader_global_hints = map(generate_global_hints, loader2)
+	train_loader_local_hints = map(generate_local_hints, loader3)
 	train_loader_labels = map(generate_label, loader4)
 
     '''
@@ -28,54 +28,55 @@ def load_data(train_dataset="", batch_size=100, shuffle=True):
 
 def imagenet_to_lab(img):
 	"""
+	Given a batch of images from ImageNet, convert them into a tensor.
 	Parameters:
+	????????????????
 
 	Returns:
-	img_lab :: Image - in LAB color format
+	img_batch_lab :: Tensor(batches, 3, height, width) - in LAB color format
 	"""
 
-
-# Create black and white input image
-def lab_to_bw(img_lab):
+def lab_to_inputs(img_batch_lab):
 	"""
 	Parameters:
-	img_lab :: Image - in LAB format from ImageNet
+	img_batch_lab :: Tensor(batches, 3, height, width) - in LAB color format
 
 	Returns:
-	img_bw :: Image - in L format (just brightness)
+	inputs :: Tensor(batches, 1, height, width) - in L format (just brightness)
 	"""
 
+	return img_batch_lab[:, :1, ;, :]
 
-#Turn color image LAB into random local hints AB
-def generate_local_hints(img_lab):
+def generate_global_hints(img_batch_lab):
 	"""
 	Parameters:
-	img_lab :: Image - in LAB format from ImageNet
+	img_batch_lab :: Tensor(batches, 3, height, width) - in LAB color format
 
 	Returns:
-	hints :: List of tuples ((x, y), (a, b)) - for hinting position (x, y) is color (a, b)
+	global_hints :: Tensor(batches, 316, 1, 1)
+	"""
+
+
+
+def generate_local_hints(img_batch_lab):
+	"""
+	Parameters:
+	img_batch_lab :: Tensor(batches, 3, height, width) - in LAB color format
+
+	Returns:
+	hints :: Tensor(batches, 2, height, width)
+	mask :: Tensor(batches, 1, height, width)
 	"""
 	# Exponential distribution for how many hints to give with parameter ??? (mentioned in video we watched)
 	# Choose that many pixels randomly uniformly (List of pixel, position pairs)
 
-
-#Turn color image LAB into random global hints
-def generate_global_hints(img_lab):
+def generate_label(img_batch_lab):
 	"""
 	Parameters:
-	img_lab :: Image - in LAB format from ImageNet
+	img_batch_lab :: Tensor(batches, 3, height, width) - in LAB color format
 
 	Returns:
-	global_hint :: Image or None - The image itself or None, randomly
-	saturation_hint :: Number or None - The saturation of the image itself or None, randomly
+	labels :: Tensor(batches, 2, height, width)
 	"""
 
-#Turn color image LAB into label AB (the expected answer)
-def generate_label(img_lab):
-	"""
-	Parameters:
-	img_lab :: Image - in LAB format from ImageNet
-
-	Returns:
-	label :: List of List of pairs - (a, b)?
-	"""
+	return img_lab[:, 1;, ;, :]
