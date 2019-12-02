@@ -5,6 +5,14 @@ from model.model import ColorizationModel
 import data.training_preprocess as data
 
 def train(epochs):
+    '''
+    Parameters:
+    epochs :: Number - The number of epochs to train.
+
+    Returns:
+    model :: ColorizationModel
+    '''
+
     learning_rate = 1e-3
 
     model = ColorizationModel()
@@ -14,7 +22,7 @@ def train(epochs):
     end_epoch = start_epoch + epochs
 
     for epoch in range(start_epoch, end_epoch):
-        inputs, global_hints, local_hints, labels = data.load_epoch()
+        inputs, global_hints, local_hints, labels = data.load_data()
         train_epoch(model, optimizer, inputs, global_hints, local_hints, labels)
 
     save_model(model, optimizer, end_epoch)
@@ -22,6 +30,13 @@ def train(epochs):
     return model
 
 def save_model(model, optimizer, epoch):
+    '''
+    Parameters:
+    model :: ColorizationModel - The model to save.
+    optimizer :: torch.optim.Adam - The optimizer to save.
+    epoch :: Number - The current epoch number.
+    '''
+    
     torch.save({'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict()}, 
@@ -29,6 +44,16 @@ def save_model(model, optimizer, epoch):
 
 
 def load_model(model, optimizer, epoch=None):
+    '''
+    Parameters:
+    model :: ColorizationModel - The model to load.
+    optimizer :: torch.optim.Adam - The optimizer to load.
+    epoch (Optional) :: Number - The epoch number to load. If None, will load highest epoch.
+
+    Returns:
+    epoch :: Number - Which epoch was loaded.
+    '''
+
     if epoch == None:
         files = os.listdir("./save_states")
         matches = map(lambda file: re.search("state-epoch-(.*).tar", file), files)
