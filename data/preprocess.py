@@ -7,7 +7,7 @@ def bw_image_to_tensor(img, type="RGB"):
     type :: String - The type of image (RGB vs. L, etc.)
 
     Returns:
-    pixels :: A tensor of shape (1, H, W)
+    pixels :: Tensor(1, height, width)
     """
 
     if type == "RGB":
@@ -25,9 +25,9 @@ def local_hints_to_tensor(hints=[]):
     hints :: List of tuples ((x, y), (a, b)) - for hinting position (x, y) is color (a, b)
 
     Returns:
-    hints :: A tensor of shape (2, H, W) - representing the ab hint values;
+    hints :: Tensor(2, height, width) - representing the ab hint values;
              0, 0 for non-provided pixels
-    mask :: A tensor of shape (1, H, W) - representing which pixels are hinted
+    mask :: Tensor(1, height, width) - representing which pixels are hinted
     """
 
     # TODO: get the image shape
@@ -58,7 +58,7 @@ def global_hint_to_tensor(img=None, type="RGB", saturation=None):
     saturation :: Number - The saturation hint
 
     Returns:
-    global_hint :: A tensor of shape (316, 1, 1) - in the following order:
+    global_hint :: Tensor(316, 1, 1) - in the following order:
                    - global hint
                    - saturation hint
                    - global hint indicator
