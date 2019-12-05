@@ -1,4 +1,17 @@
 import torch
+from skimage import io
+
+def jpeg_to_array(filepath):
+    """
+    Parameters:
+    img :: file path to jpeg image
+
+    Returns:
+    bw_pixels :: MxN np array of pixels of black and white version of image
+    color_pixels :: MxNx3 np array of pixels of image
+    """
+    return io.imread(filepath, as_gray = True), io.imread(filepath)
+
 
 def bw_image_to_tensor(img, type="RGB"):
     """
