@@ -28,18 +28,6 @@ def load_data(train_dataset="training/data/*/*.JPEG", batch_size=100, shuffle=Tr
            train_loader_local_hints, \
            train_loader_labels
 
-    '''
-    val_loader = torch.utils.data.DataLoader(
-        datasets.ImageFolder(valdir, transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            normalize,
-        ])),
-        batch_size=args.batch_size, shuffle=False,
-        num_workers=args.workers, pin_memory=True)
-    '''
-
 def image_loader(url):
     img = skimage.io.imread(url)
     img = skimage.util.img_as_float32(img)
@@ -61,6 +49,7 @@ def imagenet_to_lab(img):
     Returns:
     img_batch_lab :: Tensor(batch_size, height, width, 3) - in LAB color format
     """
+
     return torch.from_numpy(skimage.color.rgb2lab(img))
 
 
@@ -88,7 +77,7 @@ def generate_global_hints(img_batch_lab):
     pts_in_hull = np.load('data/pts_in_hull.npy')
 
     # Get flattened color array
-    ab = img_batch_lab[:, :, :, 1:]
+    ab = img_batch_lab[:, ::4, ::4, 1:]
     ab = torch.reshape(ab, (ab.shape[0], -1, 2)).numpy()
 
     # Generate global hint tensor
@@ -102,7 +91,7 @@ def generate_global_hints(img_batch_lab):
 
             # Find smalleset, and increase bin frequency by 1
             idx = np.argmin(dists)
-            bins[img_num, idx, 0, 0] += 1
+            bins[img_num, idx, 0, 0] += 16
 
     return bins
 
