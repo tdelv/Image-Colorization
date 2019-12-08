@@ -1,8 +1,9 @@
 import torch
+import torchvision
 import itertools
 
 def load_data(train_dataset="", batch_size=100, shuffle=True):
-    imagenet_data = torchvision.datasets.ImageNet('./hymenoptera_data')
+    imagenet_data = torchvision.datasets.ImageNet('data/ILSVRC2014_train_0000/')
     train_loader = torch.utils.data.DataLoader(
         imagenet_data, batch_size=batch_size, shuffle=shuffle)
 
@@ -45,7 +46,7 @@ def lab_to_inputs(img_batch_lab):
     inputs :: Tensor(batch_size, 1, height, width) - in L format (just brightness)
     """
 
-    return img_batch_lab[:, :1, ;, :]
+    return img_batch_lab[:, :1, :, :]
 
 def generate_global_hints(img_batch_lab):
     """
@@ -105,4 +106,4 @@ def generate_label(img_batch_lab):
     labels :: Tensor(batch_size, 2, height, width)
     """
 
-    return img_lab[:, 1;, ;, :]
+    return img_lab[:, 1:, :, :]

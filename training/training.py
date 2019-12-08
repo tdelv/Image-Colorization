@@ -2,7 +2,7 @@ import os
 import re
 import torch
 from model.model import ColorizationModel
-import data.training_preprocess as data
+import training.training_preprocess as data
 
 def train(epochs):
     '''
