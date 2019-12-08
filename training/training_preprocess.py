@@ -5,6 +5,7 @@ import skimage
 from skimage.transform import resize
 import itertools
 from numpy.random import randint
+import numpy as np
 
 IM_HEIGHT, IM_WIDTH = 64, 64
 
@@ -42,26 +43,9 @@ def load_data(train_dataset="training/data/*/*.JPEG", batch_size=100, shuffle=Tr
 def image_loader(url):
     img = skimage.io.imread(url)
     img = skimage.util.img_as_float32(img)
-
-    '''
-    to_pad_height, to_pad_width = max(0, IM_HEIGHT - img.shape[0]), max(0, IM_WIDTH - img.shape[1])
-    pad_bound_y, pad_bound_x = to_pad_height // 2, to_pad_width // 2
-    pad_bounds_y = (pad_bound_y, to_pad_height - pad_bound_y)
-    pad_bounds_x = (pad_bound_x, to_pad_width - pad_bound_x)
-
-    img = skimage.util.pad(img, (pad_bounds_y, pad_bounds_x, (0, 0)))
-
-    to_crop_height, to_crop_width = img.shape[0] - IM_HEIGHT, img.shape[1] - IM_WIDTH
-    crop_bound_y, crop_bound_x = int(randint(to_crop_height + 1)), int(randint(to_crop_width + 1))
-    crop_bounds_y = (crop_bound_y, to_crop_height - crop_bound_y)
-    crop_bounds_x = (crop_bound_x, to_crop_width - crop_bound_x)
-
-    img = skimage.util.crop(img, (crop_bounds_y, crop_bounds_x, (0, 0)))
-    '''
-
     img = resize(img, (IM_HEIGHT, IM_WIDTH))
 
-
+    # handle gray color images
     if len(img.shape) == 2:
         img = skimage.color.gray2rgb(img)
 
@@ -100,7 +84,27 @@ def generate_global_hints(img_batch_lab):
     global_hints :: Tensor(batch_size, 1, 1, 316)
     """
 
-    return img_batch_lab
+    # Load color bins
+    pts_in_hull = np.load('data/pts_in_hull.npy')
+
+    # Get flattened color array
+    ab = img_batch_lab[:, :, :, 1:]
+    ab = torch.reshape(ab, (ab.shape[0], -1, 2)).numpy()
+
+    # Generate global hint tensor
+    bins = torch.zeros(img_batch_lab.shape[0], 316, 1, 1)
+    for img_num, img in enumerate(ab):
+        for col in img:
+            # For each color, find distance to each bin center
+            dists = pts_in_hull - col
+            dists = dists ** 2
+            dists = np.sum(dists, axis=1)
+
+            # Find smalleset, and increase bin frequency by 1
+            idx = np.argmin(dists)
+            bins[img_num, idx, 0, 0] += 1
+
+    return bins
 
 def generate_local_hints(img_batch_lab):
     """

@@ -14,19 +14,8 @@ for inp, g_hint, l_hint, label in zip(*data):
     print(label.shape)
     '''
 
-    for l, ab, lab in zip(inp, l_hint[0], g_hint):
-        fig, axs = plt.subplots(1, 2)
-        img = torch.cat((l.double(), ab.double()), dim=-1)
-        img = skimage.color.lab2rgb(img)
-        img = resize(img, (512, 512)) 
-        #skimage.io.imsave('~/Desktop/img.JPEG', img)
-        axs[0].imshow(img)
-
-        img = lab
-        img = skimage.color.lab2rgb(img)
-        img = resize(img, (512, 512)) 
-        axs[1].imshow(img)
-        plt.show()
+    input((inp.shape, g_hint.shape, l_hint[0].shape, l_hint[1].shape, label.shape))
+    input(torch.sum(g_hint[0]))
 
 # Check dependencies
 # Setup PYTHONFILE
