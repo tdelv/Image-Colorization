@@ -5,7 +5,7 @@ from model.model import ColorizationModel
 import training.training_preprocess as data
 from tqdm import tqdm
 
-def train(epochs):
+def train(args):
     '''
     Parameters:
     epochs :: Number - The number of epochs to train.
@@ -14,27 +14,22 @@ def train(epochs):
     model :: ColorizationModel
     '''
 
-    lr = 1e-4
-    beta1 = 0.9
-
     model = ColorizationModel()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, betas=(beta1, 0.999))
+    optimizer = torch.optim.Adam(model.parameters())
 
-    if torch.cuda.is_available():
+    if args.use_gpu:
         model = model.cuda()
         print("GPU enabled.")
     else:
         print("GPU not enabled.")
 
-    start_epoch = load_model(model, optimizer)
-    end_epoch = start_epoch + epochs
+    start_epoch = load_model(model, optimizer, args=args)
+    end_epoch = start_epoch + args.num_epochs
 
     for epoch in range(start_epoch, end_epoch):
-        d, num_batches = data.load_data()
-        train_epoch(model, optimizer, d, num_batches) 
+        d, num_batches = data.load_data(args)
+        train_epoch(model, optimizer, d, num_batches, args) 
         save_model(model, optimizer, start_epoch + epoch + 1)
-
-    # save_model(model, optimizer, end_epoch)
 
     return model
 
@@ -52,7 +47,7 @@ def save_model(model, optimizer, epoch):
                 "training/save_states/state-epoch-{epoch}.tar".format(epoch=epoch))
     print('Model saved as training/save_states/state-epoch-{epoch}.tar'.format(epoch=epoch))
 
-def load_model(model, optimizer, epoch=None):
+def load_model(model, optimizer, epoch=None, args=None):
     '''
     Parameters:
     model :: ColorizationModel - The model to load.
@@ -69,6 +64,9 @@ def load_model(model, optimizer, epoch=None):
         well_formed = filter(lambda file: file != None, matches)
         epochs = list(map(lambda s: int(s.group(1)), well_formed))
         if len(epochs) == 0:
+            if args:
+                optimizer.state_dict()['param_groups'][0]['lr'] = args.learning_rate
+                optimizer.state_dict()['param_groups'][0]['betas'] = (args.beta1, 0.999)
             return 0
         epoch = max(epochs)
 
@@ -78,9 +76,12 @@ def load_model(model, optimizer, epoch=None):
 
     print('Model loaded from training/save_states/state-epoch-{epoch}.tar'.format(epoch=epoch))
 
+    optimizer.state_dict()['param_groups'][0]['lr'] = args.learning_rate
+    optimizer.state_dict()['param_groups'][0]['betas'] = (args.beta1, 0.999)
+
     return epoch
 
-def train_epoch(model, optimizer, data, num_batches=0): 
+def train_epoch(model, optimizer, data, num_batches, args): 
     '''
     Trains model for one epoch.
 
@@ -103,8 +104,8 @@ def train_epoch(model, optimizer, data, num_batches=0):
     total_loss = torch.tensor([0])
     for batch_num, batch in enumerate(data, start=1):
         
-        batch = (d.float() for  d in batch)
-        if torch.cuda.is_available():
+        batch = (d.float() for d in batch)
+        if args.use_gpu:
             batch = (d.cuda() for d in batch)
 
         input_batch, global_hint_batch, local_hint_batch, local_mask_batch, label_batch = batch
@@ -123,7 +124,7 @@ def train_epoch(model, optimizer, data, num_batches=0):
         loss_bar.set_description_str(f'Loss: {loss_val}')
         avg_loss_bar.set_description_str(f'Avg Loss: {total_loss / batch_num}')
     
-        if batch_num % 100 == 0:
+        if (batch_num % args.log_every == 0) or (batch_num == num_batches):
             print()
             print()
             print()
