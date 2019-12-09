@@ -1,44 +1,29 @@
 import torch
-import torchvision
-import data.preprocess
 import skimage
 from skimage.transform import resize
-import itertools
-from numpy.random import randint
 import numpy as np
-import time
 import glob
 
-IM_HEIGHT, IM_WIDTH = 64, 64
-
-
-def load_data(train_dataset=glob.glob('training/data/*/ILSVRC2013_DET_train_extra/*.JPEG'), batch_size=100, shuffle=True):
-    image_collection = skimage.io.ImageCollection(train_dataset, load_func=image_loader, conserve_memory=True)
+def load_data(args):
+    image_collection = skimage.io.ImageCollection(
+                        glob.glob(args.train_dir), 
+                        load_func=image_loader, 
+                        conserve_memory=args.conserve_memory)
     train_loader = torch.utils.data.DataLoader(
-        image_collection, batch_size=batch_size, shuffle=shuffle, pin_memory=True, num_workers=4, drop_last=True)
-    num_batches = len(train_dataset) // batch_size
+                        image_collection, 
+                        batch_size=args.batch_size, 
+                        shuffle=args.shuffle, 
+                        pin_memory=args.use_gpu, 
+                        num_workers=args.num_data_threads, 
+                        drop_last=True)
+    num_batches = len(train_dataset) // args.batch_size
 
     return train_loader, num_batches
-
-    '''
-    train_loader_lab = map(imagenet_to_lab, train_loader)
-    loader1, loader2, loader3, loader4 = itertools.tee(train_loader_lab, 4)
-
-    train_loader_inputs = map(lab_to_inputs, loader1)
-    train_loader_global_hints = map(generate_global_hints, loader2)
-    train_loader_local_hints = map(generate_local_hints, loader3)
-    train_loader_labels = map(generate_label, loader4)
-
-    return train_loader_inputs, \
-           train_loader_global_hints, \
-           train_loader_local_hints, \
-           train_loader_labels
-    '''
 
 def image_loader(url):
     img = skimage.io.imread(url) # slow
     img = skimage.util.img_as_float32(img)
-    img = resize(img, (IM_HEIGHT, IM_WIDTH))
+    img = resize(img, (args.im_height, args.im_width))
 
     # handle gray color images
     if len(img.shape) == 2:
@@ -140,11 +125,11 @@ def generate_local_hints(img_lab):
                 torch.tensor([height/2, width/2]), 
                 torch.tensor([[(height/4)**2, 0], [0, (width/4)**2]])).sample()
             cy, cx = int(cy), int(cx)
-            cy, cx = max(min(cy, IM_HEIGHT - 1), 0), max(min(cx, IM_WIDTH - 1), 0)
+            cy, cx = max(min(cy, args.im_height - 1), 0), max(min(cx, args.im_width - 1), 0)
 
             size = int(torch.distributions.uniform.Uniform(0, 5).sample())
-            lower_y, upper_y = max(0, cy - size), min(cy + size + 1, IM_HEIGHT - 1)
-            lower_x, upper_x = max(0, cx - size), min(cx + size + 1, IM_WIDTH - 1)
+            lower_y, upper_y = max(0, cy - size), min(cy + size + 1, args.im_height - 1)
+            lower_x, upper_x = max(0, cx - size), min(cx + size + 1, args.im_width - 1)
 
             hints[lower_y:upper_y, lower_x:upper_x, :] = \
                 torch.mean(torch.mean(img_lab[lower_y:upper_y, lower_x:upper_x, 1:], 0), 0)
