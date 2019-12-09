@@ -88,7 +88,7 @@ def load_model(model, optimizer, epoch=None, args=None):
     print('Model loaded from training/save_states/state-epoch-{epoch}.tar'.format(epoch=epoch))
 
     if args:
-        optimizer.state_dict()['param_groups'][0]['lr'] = args.learning_rate
+        optimizer.state_dict()['param_groups'][0]['lr'] = args.learn_rate
         optimizer.state_dict()['param_groups'][0]['betas'] = (args.beta1, 0.999)
 
     return epoch
