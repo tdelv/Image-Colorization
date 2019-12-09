@@ -22,7 +22,7 @@ def load_data(args):
     return train_loader, num_batches
 
 def image_loader(args):
-    def loader(img):
+    def loader(url):
         img = skimage.io.imread(url) # slow
         img = skimage.util.img_as_float32(img)
         img = resize(img, (args.im_height, args.im_width))
