@@ -63,7 +63,7 @@ def load_model(model, optimizer, epoch=None, args=None):
             x = input('Are you sure you want to reset checkpoint? (y/n) ')
             if x == 'y':
                 for file in os.listdir("training/save_states"):
-                    os.remove('training/' + file)
+                    os.remove('training/save_states/' + file)
                 break
             elif x == 'n':
                 break
