@@ -5,8 +5,9 @@ import numpy as np
 import glob
 
 def load_data(args):
+    train_dataset = glob.glob(args.train_dir)
     image_collection = skimage.io.ImageCollection(
-                        glob.glob(args.train_dir), 
+                        train_dataset, 
                         load_func=image_loader, 
                         conserve_memory=not(args.no_conserve_memory))
     train_loader = torch.utils.data.DataLoader(
