@@ -14,10 +14,11 @@ def train(epochs):
     model :: ColorizationModel
     '''
 
-    learning_rate = 1e-3
+    lr = 1e-4
+    beta1 = 0.9
 
     model = ColorizationModel()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, betas=(beta1, 0.999))
 
     if torch.cuda.is_available():
         model = model.cuda()
