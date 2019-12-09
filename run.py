@@ -1,4 +1,11 @@
+import training.training_preprocess as tp
+import skimage
+from skimage.transform import resize
+import torch
+import matplotlib.pyplot as plt
+from training.training import train
 
+train(10)
 
 # Check dependencies
 # Setup PYTHONFILE
