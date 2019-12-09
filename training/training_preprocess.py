@@ -5,7 +5,7 @@ import numpy as np
 import glob
 
 def load_data(args):
-    train_dataset = glob.glob(args.train_dir)
+    train_dataset = glob.glob(args.train_dir + "*.JPEG")
     image_collection = skimage.io.ImageCollection(
                         train_dataset, 
                         load_func=image_loader, 
