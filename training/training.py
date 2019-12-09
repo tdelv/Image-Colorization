@@ -58,7 +58,7 @@ def load_model(model, optimizer, epoch=None, args=None):
     epoch :: Number - Which epoch was loaded.
     '''
 
-    if args.reset_checkpoint:
+    if args and args.reset_checkpoint:
         while True:
             x = input('Are you sure you want to reset checkpoint? (y/n) ')
             if x == 'y':
@@ -76,7 +76,7 @@ def load_model(model, optimizer, epoch=None, args=None):
         epochs = list(map(lambda s: int(s.group(1)), well_formed))
         if len(epochs) == 0:
             if args:
-                optimizer.state_dict()['param_groups'][0]['lr'] = args.learning_rate
+                optimizer.state_dict()['param_groups'][0]['lr'] = args.learn_rate
                 optimizer.state_dict()['param_groups'][0]['betas'] = (args.beta1, 0.999)
             return 0
         epoch = max(epochs)
@@ -87,8 +87,9 @@ def load_model(model, optimizer, epoch=None, args=None):
 
     print('Model loaded from training/save_states/state-epoch-{epoch}.tar'.format(epoch=epoch))
 
-    optimizer.state_dict()['param_groups'][0]['lr'] = args.learning_rate
-    optimizer.state_dict()['param_groups'][0]['betas'] = (args.beta1, 0.999)
+    if args:
+        optimizer.state_dict()['param_groups'][0]['lr'] = args.learning_rate
+        optimizer.state_dict()['param_groups'][0]['betas'] = (args.beta1, 0.999)
 
     return epoch
 
