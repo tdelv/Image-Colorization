@@ -117,7 +117,7 @@ class ColorizationModel(nn.Module):
 
         # input shape: (-1, 512, H/8, W/8)
         self.conv8_up = \
-            nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=3, stride=2, padding=1, dilation=1)
+            nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=4, stride=2, padding=1, dilation=1)
         self.conv8_shortcut3 = \
             nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1, dilation=1)
 
@@ -134,7 +134,7 @@ class ColorizationModel(nn.Module):
 
         # input shape: (-1, 256, H/4, W/4)
         self.conv9_up = \
-            nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, stride=2, padding=1, dilation=1)
+            nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=4, stride=2, padding=1, dilation=1)
         self.conv9_shortcut2 = \
             nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1, dilation=1)
 
@@ -149,7 +149,7 @@ class ColorizationModel(nn.Module):
 
         # input shape: (-1, 128, H/2, W/2)
         self.conv10_up = \
-            nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=3, stride=2, padding=1, dilation=1)
+            nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=4, stride=2, padding=1, dilation=1)
         self.conv10_shortcut1 = \
             nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, dilation=1)
 
@@ -192,7 +192,7 @@ class ColorizationModel(nn.Module):
             nn.ConvTranspose2d(in_channels=313, out_channels=313, kernel_size=4, stride=2, padding=1, groups=313, bias=False),
             nn.ConvTranspose2d(in_channels=313, out_channels=313, kernel_size=4, stride=2, padding=1, groups=313, bias=False),
             #nn.Mul(),
-            nn.Softmax())
+            nn.Softmax(dim=1))
         # output shape: (-1, 313, H, W)
 
 
@@ -217,27 +217,46 @@ class ColorizationModel(nn.Module):
         hint_output :: Tensor(-1, 313, H, W)
         """
 
-        batch_size, _, height, width = grayscale_image.size()
+        # Clean up stuff in case an image is passed instead of a batch
+        if len(grayscale_image.size()) == 4:
+            batch_size, height, width, _ = grayscale_image.size()
+        else:
+            batch_size = 1
+            height, width, _ = grayscale_image.size()
 
-        if global_hints == None:
-            global_hints = torch.zeros(batch_size, 316, 1, 1)
-        if local_hints == None:
-            assert local_hints_mask == None, "Can't provide mask without hints"
-            local_hints = torch.zeros(batch_size, 2, height, width)
-            local_hints_mask = torch.zeros(batch_size, 1, height, width)
-        elif local_hints_mask == None:
-            assert local_hints.shape(1) == 3
-            local_hints_mask = local_hints[:, 2:, :, :]
-            local_hints = local_hints[:, :2, :, :]
+        if global_hints is None:
+            global_hints = torch.zeros(batch_size, 1, 1, 316)
+        if local_hints is None:
+            assert local_hints_mask is None, "Can't provide mask without hints"
+            local_hints = torch.zeros(batch_size, height, width, 2)
+            local_hints_mask = torch.zeros(batch_size, height, width, 1)
+        elif local_hints_mask is None:
+            assert local_hints.shape[-1] == 3
+            if len(local_hints.shape() == 4):
+                local_hints_mask = local_hints[:, :, :, 2:]
+                local_hints = local_hints[:, :, :, :2]
+            else:
+                local_hints_mask = local_hints[:, :, 2:]
+                local_hints = local_hints[:, :, :2]
 
         # Add dimension for batch if single image given
         for inp in (grayscale_image, global_hints, local_hints, local_hints_mask):
             if len(inp.size()) == 3:
                 inp.unsqueeze_(0)
 
+            # oops
+            inp.transpose_(2, 3)
+            inp.transpose_(1, 2)
+
+        grayscale_image, global_hints, local_hints, local_hints_mask = \
+            grayscale_image.float(), \
+            global_hints.float(), \
+            local_hints.float(), \
+            local_hints_mask.float()
+
         # Check input dims are correct
-        assert grayscale_image.size() == (batch_size, 1, height, width)
-        assert global_hints.size() == (batch_size, 316, 1, 1)
+        assert grayscale_image.size() == (batch_size, 1, height, width), grayscale_image.size()
+        assert global_hints.size() == (batch_size, 316, 1, 1), global_hints.size()
         assert local_hints.size() == (batch_size, 2, height, width)
         assert local_hints_mask.size() == (batch_size, 1, height, width)
 
@@ -275,11 +294,11 @@ class ColorizationModel(nn.Module):
 
         # Local pass
         hint3 = self.hint3(conv3)
-        hint4 = self.hint3(conv4)
-        hint5 = self.hint3(conv5)
-        hint6 = self.hint3(conv6)
-        hint7 = self.hint3(conv7)
-        hint8 = self.hint3(conv8)
+        hint4 = self.hint4(conv4)
+        hint5 = self.hint5(conv5)
+        hint6 = self.hint6(conv6)
+        hint7 = self.hint7(conv7)
+        hint8 = self.hint8(conv8)
         hint_total = torch.sum(torch.stack([
             hint3, hint4, hint5, hint6, hint7, hint8]), dim=0)
 
@@ -287,6 +306,9 @@ class ColorizationModel(nn.Module):
 
         assert main_output.size() == (batch_size, 2, height, width)
         assert hint_output.size() == (batch_size, 313, height, width)
+
+        main_output = main_output.transpose(1, 2).transpose(2, 3)
+        hint_output = hint_output.transpose(1, 2).transpose(2, 3)
 
         return main_output, hint_output
 

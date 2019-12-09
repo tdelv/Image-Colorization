@@ -6,15 +6,19 @@ from skimage.transform import resize
 import itertools
 from numpy.random import randint
 import numpy as np
+import time
 
 IM_HEIGHT, IM_WIDTH = 64, 64
 
 
 def load_data(train_dataset="training/data/*/*.JPEG", batch_size=100, shuffle=True):
-    image_collection = skimage.io.ImageCollection(train_dataset, load_func=image_loader)
+    image_collection = skimage.io.ImageCollection(train_dataset, load_func=image_loader, conserve_memory=True)
     train_loader = torch.utils.data.DataLoader(
-        image_collection, batch_size=batch_size, shuffle=shuffle)
+        image_collection, batch_size=batch_size, shuffle=shuffle, pin_memory=True, num_workers=4)
 
+    return train_loader
+
+    '''
     train_loader_lab = map(imagenet_to_lab, train_loader)
     loader1, loader2, loader3, loader4 = itertools.tee(train_loader_lab, 4)
 
@@ -27,17 +31,26 @@ def load_data(train_dataset="training/data/*/*.JPEG", batch_size=100, shuffle=Tr
            train_loader_global_hints, \
            train_loader_local_hints, \
            train_loader_labels
+    '''
 
 def image_loader(url):
-    img = skimage.io.imread(url)
+    start_time  = time.time()
+   
+    img = skimage.io.imread(url) # slow
     img = skimage.util.img_as_float32(img)
     img = resize(img, (IM_HEIGHT, IM_WIDTH))
 
     # handle gray color images
     if len(img.shape) == 2:
         img = skimage.color.gray2rgb(img)
+    
+    img_lab = imagenet_to_lab(img) # slow
+    inputs = generate_input(img_lab)
+    global_hints = generate_global_hints(img_lab) # slow
+    local_hints, local_mask = generate_local_hints(img_lab)
+    labels = generate_label(img_lab)
 
-    return img
+    return inputs, global_hints, local_hints, local_mask, labels
 
 
 def imagenet_to_lab(img):
@@ -49,98 +62,95 @@ def imagenet_to_lab(img):
     Returns:
     img_batch_lab :: Tensor(batch_size, height, width, 3) - in LAB color format
     """
-
+    
     return torch.from_numpy(skimage.color.rgb2lab(img))
 
 
-def lab_to_inputs(img_batch_lab):
+def generate_input(img_lab):
     """
     Parameters:
-    img_batch_lab :: Tensor(batch_size, height, width, 3) - in LAB color format
+    img_batch_lab :: Tensor(height, width, 3) - in LAB color format
 
     Returns:
-    inputs :: Tensor(batch_size, height, width, 1) - in L format (just brightness)
+    inputs :: Tensor(height, width, 1) - in L format (just brightness)
     """
 
-    return img_batch_lab[:, :, :, :1]
+    return img_lab[:, :, :1]
 
-def generate_global_hints(img_batch_lab):
+# Load color bins
+pts_in_hull = np.load('data/pts_in_hull.npy')
+
+def generate_global_hints(img_lab):
     """
     Parameters:
-    img_batch_lab :: Tensor(batch_size, height, width, 3) - in LAB color format
+    img_batch_lab :: Tensor(height, width, 3) - in LAB color format
 
     Returns:
-    global_hints :: Tensor(batch_size, 1, 1, 316)
+    global_hints :: Tensor(1, 1, 316)
     """
-
-    # Load color bins
-    pts_in_hull = np.load('data/pts_in_hull.npy')
-
     # Get flattened color array
-    ab = img_batch_lab[:, ::4, ::4, 1:]
-    ab = torch.reshape(ab, (ab.shape[0], -1, 2)).numpy()
+    ab = img_lab[::4, ::4, 1:]
+    ab = torch.reshape(ab, (-1, 2)).numpy()
 
     # Generate global hint tensor
-    bins = torch.zeros(img_batch_lab.shape[0], 316, 1, 1)
-    for img_num, img in enumerate(ab):
-        for col in img:
-            # For each color, find distance to each bin center
-            dists = pts_in_hull - col
-            dists = dists ** 2
-            dists = np.sum(dists, axis=1)
+    bins = torch.zeros(1, 1, 316)
+    for col in ab:
+        # For each color, find distance to each bin center
+        dists = pts_in_hull - col
+        dists = dists ** 2
+        dists = np.sum(dists, axis=1)
 
-            # Find smalleset, and increase bin frequency by 1
-            idx = np.argmin(dists)
-            bins[img_num, idx, 0, 0] += 16
+        # Find smalleset, and increase bin frequency by 1
+        idx = np.argmin(dists)
+        bins[0, 0, idx] += 16
 
     return bins
 
-def generate_local_hints(img_batch_lab):
+def generate_local_hints(img_lab):
     """
     Parameters:
-    img_batch_lab :: Tensor(batch_size, height, width, 3) - in LAB color format
+    img_batch_lab :: Tensor(height, width, 3) - in LAB color format
 
     Returns:
-    hints :: Tensor(batch_size, height, width, 2)
-    mask :: Tensor(batch_size, height, width, 1)
+    hints :: Tensor(height, width, 2)
+    mask :: Tensor(height, width, 1)
     """
 
-    batch_size, height, width, _ = img_batch_lab.shape
+    height, width, _ = img_lab.shape
 
-    hints = torch.zeros(batch_size, height, width, 2)
-    mask = torch.zeros(batch_size, height, width, 1)
+    hints = torch.zeros(height, width, 2)
+    mask = torch.zeros(height, width, 1)
 
-    for img in range(batch_size):
-        reveal_all = int(torch.distributions.bernoulli.Bernoulli(1/100).sample())
-        if reveal_all:
-            hints[img, :, :, :] = img_batch_lab[img, :, :, 1:]
-            mask[img, :, :, :] = 1.
-        else:
-            num_hints = int(torch.distributions.geometric.Geometric(1/8).sample())
-            for hint in range(num_hints):
-                cy, cx = torch.distributions.multivariate_normal.MultivariateNormal(
-                    torch.tensor([height/2, width/2]), 
-                    torch.tensor([[(height/4)**2, 0], [0, (width/4)**2]])).sample()
-                cy, cx = int(cy), int(cx)
-                cy, cx = max(min(cy, IM_HEIGHT - 1), 0), max(min(cx, IM_WIDTH - 1), 0)
+    reveal_all = int(torch.distributions.bernoulli.Bernoulli(1/100).sample())
+    if reveal_all:
+        hints[:, :, :] = img_lab[:, :, 1:]
+        mask[:, :, :] = 1.
+    else:
+        num_hints = int(torch.distributions.geometric.Geometric(1/8).sample())
+        for hint in range(num_hints):
+            cy, cx = torch.distributions.multivariate_normal.MultivariateNormal(
+                torch.tensor([height/2, width/2]), 
+                torch.tensor([[(height/4)**2, 0], [0, (width/4)**2]])).sample()
+            cy, cx = int(cy), int(cx)
+            cy, cx = max(min(cy, IM_HEIGHT - 1), 0), max(min(cx, IM_WIDTH - 1), 0)
 
-                size = int(torch.distributions.uniform.Uniform(0, 5).sample())
-                lower_y, upper_y = max(0, cy - size), min(cy + size + 1, IM_HEIGHT - 1)
-                lower_x, upper_x = max(0, cx - size), min(cx + size + 1, IM_WIDTH - 1)
+            size = int(torch.distributions.uniform.Uniform(0, 5).sample())
+            lower_y, upper_y = max(0, cy - size), min(cy + size + 1, IM_HEIGHT - 1)
+            lower_x, upper_x = max(0, cx - size), min(cx + size + 1, IM_WIDTH - 1)
 
-                hints[img, lower_y:upper_y, lower_x:upper_x, :] = \
-                    torch.mean(torch.mean(img_batch_lab[img, lower_y:upper_y, lower_x:upper_x, 1:], 0), 0)
-                mask[img, lower_y:upper_y, lower_x:upper_x, :] = 1.
+            hints[lower_y:upper_y, lower_x:upper_x, :] = \
+                torch.mean(torch.mean(img_lab[lower_y:upper_y, lower_x:upper_x, 1:], 0), 0)
+            mask[lower_y:upper_y, lower_x:upper_x, :] = 1.
 
     return hints, mask
 
-def generate_label(img_batch_lab):
+def generate_label(img_lab):
     """
     Parameters:
-    img_batch_lab :: Tensor(batch_size, height, width, 3) - in LAB color format
+    img_batch_lab :: Tensor(height, width, 3) - in LAB color format
 
     Returns:
-    labels :: Tensor(batch_size, height, width, 2)
+    labels :: Tensor(height, width, 2)
     """
 
-    return img_batch_lab[:, :, :, 1:]
+    return img_lab[:, :, 1:]
