@@ -1,6 +1,7 @@
 from training.training import train
 import warnings
 import argparse
+import torch
 
 warnings.filterwarnings("ignore", "(Possibly )?corrupt EXIF data", UserWarning)
 
