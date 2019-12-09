@@ -9,10 +9,10 @@ parser = argparse.ArgumentParser(description='DCGAN')
 parser.add_argument('--train-dir', type=str, default='training/data/ILSVRC2014_DET_train/ILSVRC2013_DET_train_extra/',
                     help='Data where training images live')
 
-parser.add_argument('--shuffle', type=bool, default=True,
+parser.add_argument('--no-shuffle', action='store_false',
 					help='Shuffle the data when training?')
 
-parser.add_argument('--conserve-memory', type=bool, default=True,
+parser.add_argument('--no-conserve-memory', action='store_false',
 					help='Only load one image a time in memory?')
 
 parser.add_argument('--im-height', type=int, default=64,
