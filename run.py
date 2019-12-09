@@ -30,7 +30,7 @@ parser.add_argument('--out-dir', type=str, default='data/outputs/',
 parser.add_argument('--mode', type=str, default='train',
                     help='Can be "train" or "test"')
 
-parser.add_argument('--reset-checkpoint', action='reset_true',
+parser.add_argument('--reset-checkpoint', action='store_true',
                     help='Use this flag if you want to resuming training from a previously-saved checkpoint')
 
 parser.add_argument('--batch-size', type=int, default=128,

@@ -58,6 +58,17 @@ def load_model(model, optimizer, epoch=None, args=None):
     epoch :: Number - Which epoch was loaded.
     '''
 
+    if args.reset_checkpoint:
+        while True:
+            x = input('Are you sure you want to reset checkpoint? (y/n) ')
+            if x == 'y':
+                for file in os.listdir("training/save_states"):
+                    os.remove('training/' + file)
+                break
+            elif x == 'n':
+                break
+        args.reset_checkpoint = False
+
     if epoch == None:
         files = os.listdir("training/save_states")
         matches = map(lambda file: re.search("state-epoch-(.*).tar", file), files)
