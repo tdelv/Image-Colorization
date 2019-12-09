@@ -7,16 +7,18 @@ import itertools
 from numpy.random import randint
 import numpy as np
 import time
+import glob
 
 IM_HEIGHT, IM_WIDTH = 64, 64
 
 
-def load_data(train_dataset="training/data/*/*.JPEG", batch_size=100, shuffle=True):
+def load_data(train_dataset=glob.glob('training/data/*/ILSVRC2013_DET_train_extra/*.JPEG'), batch_size=100, shuffle=True):
     image_collection = skimage.io.ImageCollection(train_dataset, load_func=image_loader, conserve_memory=True)
     train_loader = torch.utils.data.DataLoader(
-        image_collection, batch_size=batch_size, shuffle=shuffle, pin_memory=True, num_workers=4)
+        image_collection, batch_size=batch_size, shuffle=shuffle, pin_memory=True, num_workers=4, drop_last=True)
+    num_batches = len(train_dataset) // batch_size
 
-    return train_loader
+    return train_loader, num_batches
 
     '''
     train_loader_lab = map(imagenet_to_lab, train_loader)
@@ -34,8 +36,6 @@ def load_data(train_dataset="training/data/*/*.JPEG", batch_size=100, shuffle=Tr
     '''
 
 def image_loader(url):
-    start_time  = time.time()
-   
     img = skimage.io.imread(url) # slow
     img = skimage.util.img_as_float32(img)
     img = resize(img, (IM_HEIGHT, IM_WIDTH))
@@ -46,7 +46,7 @@ def image_loader(url):
     
     img_lab = imagenet_to_lab(img) # slow
     inputs = generate_input(img_lab)
-    global_hints = generate_global_hints(img_lab) # slow
+    global_hints = generate_global_hints(img_lab, img) # slow
     local_hints, local_mask = generate_local_hints(img_lab)
     labels = generate_label(img_lab)
 
@@ -80,7 +80,7 @@ def generate_input(img_lab):
 # Load color bins
 pts_in_hull = np.load('data/pts_in_hull.npy')
 
-def generate_global_hints(img_lab):
+def generate_global_hints(img_lab, img_rgb):
     """
     Parameters:
     img_batch_lab :: Tensor(height, width, 3) - in LAB color format
@@ -88,23 +88,31 @@ def generate_global_hints(img_lab):
     Returns:
     global_hints :: Tensor(1, 1, 316)
     """
-    # Get flattened color array
-    ab = img_lab[::4, ::4, 1:]
-    ab = torch.reshape(ab, (-1, 2)).numpy()
 
     # Generate global hint tensor
-    bins = torch.zeros(1, 1, 316)
-    for col in ab:
-        # For each color, find distance to each bin center
-        dists = pts_in_hull - col
-        dists = dists ** 2
-        dists = np.sum(dists, axis=1)
+    global_hint = torch.zeros(1, 1, 316).float()
+    if torch.distributions.bernoulli.Bernoulli(1/2).sample():
+        global_hint[0, 0, 313] = 1.
+        
+        # Get flattened color array
+        ab = img_lab[::4, ::4, 1:].reshape((-1, 2 )).numpy()
 
-        # Find smalleset, and increase bin frequency by 1
-        idx = np.argmin(dists)
-        bins[0, 0, idx] += 16
+        for col in ab:
+            # For each color, find distance to each bin center
+            dists = pts_in_hull - col
+            dists = dists ** 2
+            dists = np.sum(dists, axis=1)
 
-    return bins
+            # Find smalleset, and increase bin frequency by 1
+            idx = np.argmin(dists)
+            global_hint[0, 0, idx] += 16.
+
+    if torch.distributions.bernoulli.Bernoulli(1/2).sample():
+        global_hint[0, 0, 314] = 1.
+        hsv = skimage.color.rgb2hsv(img_rgb)
+        global_hint[0, 0, 315] = np.mean(hsv[:, :, 1])
+
+    return global_hint 
 
 def generate_local_hints(img_lab):
     """

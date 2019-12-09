@@ -5,7 +5,7 @@ import torch
 import matplotlib.pyplot as plt
 from training.training import train
 
-train(1)
+train(10)
 
 # Check dependencies
 # Setup PYTHONFILE
