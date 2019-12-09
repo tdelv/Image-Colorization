@@ -8,7 +8,7 @@ def load_data(args):
     train_dataset = glob.glob(args.train_dir + "*.JPEG")
     image_collection = skimage.io.ImageCollection(
                         train_dataset, 
-                        load_func=image_loader, 
+                        load_func=image_loader(args), 
                         conserve_memory=not(args.no_conserve_memory))
     train_loader = torch.utils.data.DataLoader(
                         image_collection, 
@@ -21,25 +21,27 @@ def load_data(args):
 
     return train_loader, num_batches
 
-def image_loader(url):
-    img = skimage.io.imread(url) # slow
-    img = skimage.util.img_as_float32(img)
-    img = resize(img, (args.im_height, args.im_width))
+def image_loader(args):
+    def loader(img):
+        img = skimage.io.imread(url) # slow
+        img = skimage.util.img_as_float32(img)
+        img = resize(img, (args.im_height, args.im_width))
 
-    # handle gray color images
-    if len(img.shape) == 2:
-        img = skimage.color.gray2rgb(img)
-    
-    img_lab = imagenet_to_lab(img) # slow
-    inputs = generate_input(img_lab)
-    global_hints = generate_global_hints(img_lab, img) # slow
-    local_hints, local_mask = generate_local_hints(img_lab)
-    labels = generate_label(img_lab)
+        # handle gray color images
+        if len(img.shape) == 2:
+            img = skimage.color.gray2rgb(img)
+        
+        img_lab = imagenet_to_lab(img, args) # slow
+        inputs = generate_input(img_lab, args)
+        global_hints = generate_global_hints(img_lab, img, args) # slow
+        local_hints, local_mask = generate_local_hints(img_lab, args)
+        labels = generate_label(img_lab, args)
 
-    return inputs, global_hints, local_hints, local_mask, labels
+        return inputs, global_hints, local_hints, local_mask, labels
 
+    return loader
 
-def imagenet_to_lab(img):
+def imagenet_to_lab(img, args):
     """
     Given a batch of images from ImageNet, convert them into a tensor.
     Parameters:
@@ -52,7 +54,7 @@ def imagenet_to_lab(img):
     return torch.from_numpy(skimage.color.rgb2lab(img))
 
 
-def generate_input(img_lab):
+def generate_input(img_lab, args):
     """
     Parameters:
     img_batch_lab :: Tensor(height, width, 3) - in LAB color format
@@ -66,7 +68,7 @@ def generate_input(img_lab):
 # Load color bins
 pts_in_hull = np.load('data/pts_in_hull.npy')
 
-def generate_global_hints(img_lab, img_rgb):
+def generate_global_hints(img_lab, img_rgb, args):
     """
     Parameters:
     img_batch_lab :: Tensor(height, width, 3) - in LAB color format
@@ -100,7 +102,7 @@ def generate_global_hints(img_lab, img_rgb):
 
     return global_hint 
 
-def generate_local_hints(img_lab):
+def generate_local_hints(img_lab, args):
     """
     Parameters:
     img_batch_lab :: Tensor(height, width, 3) - in LAB color format
@@ -138,7 +140,7 @@ def generate_local_hints(img_lab):
 
     return hints, mask
 
-def generate_label(img_lab):
+def generate_label(img_lab, args):
     """
     Parameters:
     img_batch_lab :: Tensor(height, width, 3) - in LAB color format
