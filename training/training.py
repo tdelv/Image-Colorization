@@ -27,12 +27,10 @@ def train(epochs):
 
     start_epoch = load_model(model, optimizer)
     end_epoch = start_epoch + epochs
-    
-    print("Loaded epoch", start_epoch)
 
     for epoch in range(start_epoch, end_epoch):
-        d = data.load_data()
-        train_epoch(model, optimizer, d) 
+        d, num_batches = data.load_data()
+        train_epoch(model, optimizer, d, num_batches) 
         save_model(model, optimizer, start_epoch + epoch + 1)
 
     # save_model(model, optimizer, end_epoch)
@@ -51,7 +49,7 @@ def save_model(model, optimizer, epoch):
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict()}, 
                 "training/save_states/state-epoch-{epoch}.tar".format(epoch=epoch))
-
+    print('Model saved as training/save_states/state-epoch-{epoch}.tar'.format(epoch=epoch))
 
 def load_model(model, optimizer, epoch=None):
     '''
@@ -77,9 +75,11 @@ def load_model(model, optimizer, epoch=None):
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
+    print('Model loaded from training/save_states/state-epoch-{epoch}.tar'.format(epoch=epoch))
+
     return epoch
 
-def train_epoch(model, optimizer, data): 
+def train_epoch(model, optimizer, data, num_batches=0): 
     '''
     Trains model for one epoch.
 
@@ -93,7 +93,7 @@ def train_epoch(model, optimizer, data):
     '''
 
     print("Begin training epoch")
-    prog_bar = tqdm(total=100, desc='Batch', position=0)
+    prog_bar = tqdm(total=num_batches, desc='Batch', position=0)
     loss_bar = tqdm(total=0, position=1, bar_format='{desc}')
     avg_loss_bar = tqdm(total=0, position=2, bar_format='{desc}')
 
@@ -122,7 +122,7 @@ def train_epoch(model, optimizer, data):
         loss_bar.set_description_str(f'Loss: {loss_val}')
         avg_loss_bar.set_description_str(f'Avg Loss: {total_loss / batch_num}')
     
-        if batch_num % 20 == 0:
+        if batch_num % 100 == 0:
             print()
             print()
             print()
@@ -144,6 +144,6 @@ def loss(outputs, labels):
                  (delta * (torch.abs(diff) - 1/2 * delta) * (torch.abs(diff) >= delta).float())
 
     img_loss = torch.sum(pixel_loss, (1, 2, 3))
-    total_loss = torch.sum(img_loss)
+    total_loss = torch.mean(img_loss)
 
     return total_loss
