@@ -8,11 +8,11 @@ def load_data(args):
     image_collection = skimage.io.ImageCollection(
                         glob.glob(args.train_dir), 
                         load_func=image_loader, 
-                        conserve_memory=args.conserve_memory)
+                        conserve_memory=not(args.no_conserve_memory))
     train_loader = torch.utils.data.DataLoader(
                         image_collection, 
                         batch_size=args.batch_size, 
-                        shuffle=args.shuffle, 
+                        shuffle=not(args.no_shuffle), 
                         pin_memory=args.use_gpu, 
                         num_workers=args.num_data_threads, 
                         drop_last=True)
