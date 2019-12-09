@@ -81,7 +81,7 @@ def generate_global_hints(img_batch_lab):
     ab = torch.reshape(ab, (ab.shape[0], -1, 2)).numpy()
 
     # Generate global hint tensor
-    bins = torch.zeros(img_batch_lab.shape[0], 316, 1, 1)
+    bins = torch.zeros(img_batch_lab.shape[0], 1, 1, 316)
     for img_num, img in enumerate(ab):
         for col in img:
             # For each color, find distance to each bin center
@@ -91,7 +91,7 @@ def generate_global_hints(img_batch_lab):
 
             # Find smalleset, and increase bin frequency by 1
             idx = np.argmin(dists)
-            bins[img_num, idx, 0, 0] += 16
+            bins[img_num, 0, 0, idx] += 16
 
     return bins
 

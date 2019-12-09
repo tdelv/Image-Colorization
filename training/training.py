@@ -3,6 +3,7 @@ import re
 import torch
 from model.model import ColorizationModel
 import training.training_preprocess as data
+import tensorflow as tf
 
 def train(epochs):
     '''
@@ -24,8 +25,9 @@ def train(epochs):
     for epoch in range(start_epoch, end_epoch):
         inputs, global_hints, local_hints, labels = data.load_data()
         train_epoch(model, optimizer, inputs, global_hints, local_hints, labels)
+        save_model(model, optimizer, start_epoch + epoch + 1)
 
-    save_model(model, optimizer, end_epoch)
+    # save_model(model, optimizer, end_epoch)
 
     return model
 
@@ -55,7 +57,7 @@ def load_model(model, optimizer, epoch=None):
     '''
 
     if epoch == None:
-        files = os.listdir("./save_states")
+        files = os.listdir("training/save_states")
         matches = map(lambda file: re.search("state-epoch-(.*).tar", file), files)
         well_formed = filter(lambda s: file != None, matches)
         epochs = list(map(lambda s: s.group(1), well_formed))
@@ -81,19 +83,27 @@ def train_epoch(model, optimizer, inputs, global_hints, local_hints, labels):
     global_hints :: Iterator<Tensor(batch, 1, 1, 316)> - Global hints
     labels :: Iterator<Tensor(batch, height, width, 2)> - Correct AB predictions
     '''
-    
+
+    print("Begin training epoch")
+    prog_bar = tf.keras.utils.Progbar(None)
+    prog_bar.add(0)
+
     model.train()
 
-    for input_batch, local_hint_batch, global_hint_batch, label_batch \
-    in zip(inputs, local_hints, global_hints, labels):
+    for batch_num, (input_batch, local_hint_batch, global_hint_batch, label_batch) \
+    in enumerate(zip(inputs, local_hints, global_hints, labels)):
         optimizer.zero_grad()
 
         outputs_batch = model(input_batch, global_hint_batch, *local_hint_batch)
-        loss_batch = loss(outputs_batch, labels_batch)
+        loss_batch = loss(outputs_batch[0], label_batch)
 
         loss_batch.backward()
         optimizer.step()
 
+        prog_bar.add(1, [('Loss', loss_batch.detach().numpy())])
+
+        if batch_num % 10 == 9:
+            print()
 
 
 def loss(outputs, labels):
@@ -112,7 +122,7 @@ def loss(outputs, labels):
     pixel_loss = (1/2 * torch.pow(diff, 2) * (torch.abs(diff) < delta)) + \
                  (delta * (torch.abs(diff) - 1/2 * delta) * (torch.abs(diff) >= delta))
 
-    img_loss = torch.sum(pixel_loss, (2, 3, 4))
+    img_loss = torch.sum(pixel_loss, (1, 2, 3))
     total_loss = torch.sum(img_loss)
 
     return total_loss
