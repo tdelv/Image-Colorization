@@ -1,7 +1,10 @@
-from training.training import train
+from training.training import train, load_model
+from training.training_preprocess import image_loader
 import warnings
 import argparse
 import torch
+import glob
+import skimage.io
 
 warnings.filterwarnings("ignore", "(Possibly )?corrupt EXIF data", UserWarning)
 
@@ -11,16 +14,16 @@ parser.add_argument('--train-dir', type=str, default='training/data/ILSVRC2014_D
                     help='Data where training images live')
 
 parser.add_argument('--no-shuffle', action='store_false',
-					help='Shuffle the data when training?')
+                    help='Shuffle the data when training?')
 
 parser.add_argument('--no-conserve-memory', action='store_false',
-					help='Only load one image a time in memory?')
+                    help='Only load one image a time in memory?')
 
 parser.add_argument('--im-height', type=int, default=64,
-					help='Height of training image rescale.')
+                    help='Height of training image rescale.')
 
 parser.add_argument('--im-width', type=int, default=64,
-					help='Width of training image rescale.')
+                    help='Width of training image rescale.')
 
 parser.add_argument('--test-dir', type=str, default='data/inputs/',
                     help='Data where testing images live')
@@ -56,16 +59,23 @@ parser.add_argument('--save-every', type=int, default=500,
                     help='Save the state of the network after every [this many] training iterations')
 
 parser.add_argument('--use-gpu', type=bool, default=torch.cuda.is_available(),
-					help='Should we use gpu')
+                    help='Should we use gpu')
 
 args = parser.parse_args()
 
 if args.mode == 'train':
-	train(args)
+    train(args)
 elif args.mode == 'test':
-	pass
+    model, _, _ = load_model(args=args)
+    loader = image_loader(args)
+    for file in glob.glob('data/inputs/*.JPEG'):
+        inp, gl, loh, lom, lab = loader(file)
+        out = model(inp, gl, loh, lom)[0][0] * 100
+        out = torch.cat((inp, out.double()), dim=-1).detach().numpy()
+        out = skimage.color.lab2rgb(out)
+        skimage.io.imsave(file.replace('inputs', 'outputs'), out)
 else:
-	raise ValueError('--mode should be one of "train" or "test".')
+    raise ValueError('--mode should be one of "train" or "test".')
 
 # Check dependencies
 # Setup PYTHONFILE

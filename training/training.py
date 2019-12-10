@@ -14,17 +14,14 @@ def train(args):
     model :: ColorizationModel
     '''
 
-    model = ColorizationModel()
-    optimizer = torch.optim.Adam(model.parameters())
+    model, optimizer, start_epoch = load_model(args=args)
+    end_epoch = start_epoch + args.num_epochs
 
     if args.use_gpu:
         model = model.cuda()
         print("GPU enabled.")
     else:
         print("GPU not enabled.")
-
-    start_epoch = load_model(model, optimizer, args=args)
-    end_epoch = start_epoch + args.num_epochs
 
     for epoch in range(start_epoch, end_epoch):
         d, num_batches = data.load_data(args)
@@ -47,7 +44,7 @@ def save_model(model, optimizer, epoch):
                 "training/save_states/state-epoch-{epoch}.tar".format(epoch=epoch))
     print('Model saved as training/save_states/state-epoch-{epoch}.tar'.format(epoch=epoch))
 
-def load_model(model, optimizer, epoch=None, args=None):
+def load_model(model=None, optimizer=None, epoch=None, args=None):
     '''
     Parameters:
     model :: ColorizationModel - The model to load.
@@ -57,6 +54,11 @@ def load_model(model, optimizer, epoch=None, args=None):
     Returns:
     epoch :: Number - Which epoch was loaded.
     '''
+
+    if model == None:
+        model = ColorizationModel()
+    if optimizer == None:
+        optimizer = torch.optim.Adam(model.parameters())
 
     if args and args.reset_checkpoint:
         while True:
@@ -78,10 +80,13 @@ def load_model(model, optimizer, epoch=None, args=None):
             if args:
                 optimizer.state_dict()['param_groups'][0]['lr'] = args.learn_rate
                 optimizer.state_dict()['param_groups'][0]['betas'] = (args.beta1, 0.999)
-            return 0
+            return model, optimizer, 0
         epoch = max(epochs)
 
-    checkpoint = torch.load("training/save_states/state-epoch-{epoch}.tar".format(epoch=epoch))
+    if args.use_gpu:
+        checkpoint = torch.load("training/save_states/state-epoch-{epoch}.tar".format(epoch=epoch), map_location=torch.device('cuda'))
+    else:
+        checkpoint = torch.load("training/save_states/state-epoch-{epoch}.tar".format(epoch=epoch), map_location=torch.device('cpu'))
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
@@ -91,7 +96,7 @@ def load_model(model, optimizer, epoch=None, args=None):
         optimizer.state_dict()['param_groups'][0]['lr'] = args.learn_rate
         optimizer.state_dict()['param_groups'][0]['betas'] = (args.beta1, 0.999)
 
-    return epoch
+    return model, optimizer, epoch
 
 def train_epoch(model, optimizer, data, num_batches, args): 
     '''

@@ -98,7 +98,7 @@ def generate_global_hints(img_lab, img_rgb, args):
     if torch.distributions.bernoulli.Bernoulli(1/2).sample():
         global_hint[0, 0, 314] = 1.
         hsv = skimage.color.rgb2hsv(img_rgb)
-        global_hint[0, 0, 315] = np.mean(hsv[:, :, 1])
+        global_hint[0, 0, 315] = float(np.mean(hsv[:, :, 1]))
 
     return global_hint 
 

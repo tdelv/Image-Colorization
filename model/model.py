@@ -239,6 +239,12 @@ class ColorizationModel(nn.Module):
                 local_hints_mask = local_hints[:, :, 2:]
                 local_hints = local_hints[:, :, :2]
 
+        grayscale_image, global_hints, local_hints, local_hints_mask = \
+        grayscale_image.float(), \
+        global_hints.float(), \
+        local_hints.float(), \
+        local_hints_mask.float()
+
         # Add dimension for batch if single image given
         for inp in (grayscale_image, global_hints, local_hints, local_hints_mask):
             if len(inp.size()) == 3:
@@ -247,12 +253,6 @@ class ColorizationModel(nn.Module):
             # oops
             inp.transpose_(2, 3)
             inp.transpose_(1, 2)
-
-        grayscale_image, global_hints, local_hints, local_hints_mask = \
-            grayscale_image.float(), \
-            global_hints.float(), \
-            local_hints.float(), \
-            local_hints_mask.float()
 
         # Check input dims are correct
         assert grayscale_image.size() == (batch_size, 1, height, width), grayscale_image.size()
@@ -290,7 +290,7 @@ class ColorizationModel(nn.Module):
         conv10_in = torch.add(conv10_up, conv10_short1, alpha=0.5)
         conv10 = self.conv10(conv10_in)
 
-        main_output = self.main_out(conv10)
+        main_output = self.main_out(conv10) * 100. # multiplier here for fixing range :()
 
         # Local pass
         hint3 = self.hint3(conv3)
