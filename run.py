@@ -72,6 +72,7 @@ elif args.mode == 'test':
         inp, gl, loh, lom, lab = loader(file)
         out = model(inp, gl, loh, lom)[0][0]
         out = torch.cat((inp, out.double()), dim=-1).detach().numpy()
+        print(out)
         out = skimage.color.lab2rgb(out)
         skimage.io.imsave(file.replace('inputs', 'outputs'), out)
 else:

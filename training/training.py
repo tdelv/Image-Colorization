@@ -26,7 +26,7 @@ def train(args):
     for epoch in range(start_epoch, end_epoch):
         d, num_batches = data.load_data(args)
         train_epoch(model, optimizer, d, num_batches, args) 
-        save_model(model, optimizer, start_epoch + epoch + 1)
+        save_model(model, optimizer, epoch + 1)
 
     return model
 
