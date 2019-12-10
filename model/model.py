@@ -293,6 +293,7 @@ class ColorizationModel(nn.Module):
         main_output = self.main_out(conv10)
 
         # Local pass
+        '''
         hint3 = self.hint3(conv3)
         hint4 = self.hint4(conv4)
         hint5 = self.hint5(conv5)
@@ -303,12 +304,14 @@ class ColorizationModel(nn.Module):
             hint3, hint4, hint5, hint6, hint7, hint8]), dim=0)
 
         hint_output = self.hint_network(hint_total)
+        '''
 
         assert main_output.size() == (batch_size, 2, height, width)
-        assert hint_output.size() == (batch_size, 313, height, width)
-
+        #assert hint_output.size() == (batch_size, 313, height, width)
+        
         main_output = main_output.transpose(1, 2).transpose(2, 3)
-        hint_output = hint_output.transpose(1, 2).transpose(2, 3)
+        #hint_output = hint_output.transpose(1, 2).transpose(2, 3)
 
+        hint_output = None
         return main_output, hint_output
 
