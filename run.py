@@ -40,7 +40,7 @@ parser.add_argument('--reset-checkpoint', action='store_true',
 parser.add_argument('--batch-size', type=int, default=128,
                     help='Sizes of image batches fed through the network')
 
-parser.add_argument('--num-data-threads', type=int, default=4,
+parser.add_argument('--num-workers', type=int, default=0,
                     help='Number of threads to use when loading & pre-processing training images')
 
 parser.add_argument('--num-epochs', type=int, default=10,

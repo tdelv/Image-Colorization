@@ -15,7 +15,7 @@ def load_data(args):
                         batch_size=args.batch_size, 
                         shuffle=not(args.no_shuffle), 
                         pin_memory=args.use_gpu, 
-                        num_workers=args.num_data_threads, 
+                        num_workers=args.num_workers, 
                         drop_last=True)
     num_batches = len(train_dataset) // args.batch_size
 
