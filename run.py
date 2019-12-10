@@ -70,7 +70,7 @@ elif args.mode == 'test':
     loader = image_loader(args)
     for file in glob.glob('data/inputs/*.JPEG'):
         inp, gl, loh, lom, lab = loader(file)
-        out = model(inp, gl, loh, lom)[0][0] * 100
+        out = model(inp, gl, loh, lom)[0][0]
         out = torch.cat((inp, out.double()), dim=-1).detach().numpy()
         out = skimage.color.lab2rgb(out)
         skimage.io.imsave(file.replace('inputs', 'outputs'), out)
