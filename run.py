@@ -1,5 +1,6 @@
 from training.training import train, load_model
 from training.training_preprocess import image_loader
+from data.analyze import analyze
 import warnings
 import argparse
 import torch
@@ -32,7 +33,7 @@ parser.add_argument('--out-dir', type=str, default='data/outputs/',
                     help='Data where sampled output images will be written')
 
 parser.add_argument('--mode', type=str, default='train',
-                    help='Can be "train" or "test"')
+                    help='Can be "train" or "test" or "analyze"')
 
 parser.add_argument('--reset-checkpoint', action='store_true',
                     help='Use this flag if you want to resuming training from a previously-saved checkpoint')
@@ -78,8 +79,10 @@ elif args.mode == 'test':
         out = torch.cat((inp, out.double()), dim=-1).detach().numpy()
         out = skimage.color.lab2rgb(out)
         skimage.io.imsave(file.replace('inputs', 'outputs'), out)
+elif args.mode == 'analyze';
+    analyze(args)
 else:
-    raise ValueError('--mode should be one of "train" or "test".')
+    raise ValueError('--mode should be one of "train" or "test" or "analyze".')
 
 # Check dependencies
 # Setup PYTHONFILE
