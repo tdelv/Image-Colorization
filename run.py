@@ -63,6 +63,8 @@ parser.add_argument('--use-gpu', type=bool, default=torch.cuda.is_available(),
 
 parser.add_argument('--backup-saves', action='store_true')
 
+parser.add_argument('--reset-optimizer', action='store_true')
+
 args = parser.parse_args()
 
 if args.mode == 'train':

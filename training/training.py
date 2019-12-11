@@ -26,11 +26,11 @@ def train(args):
     for epoch in range(start_epoch, end_epoch):
         d, num_batches = data.load_data(args)
         train_epoch(model, optimizer, d, num_batches, args) 
-        save_model(model, optimizer, epoch + 1)
+        save_model(model, optimizer, epoch + 1, args)
 
     return model
 
-def save_model(model, optimizer, epoch):
+def save_model(model, optimizer, epoch, args):
     '''
     Parameters:
     model :: ColorizationModel - The model to save.
@@ -42,8 +42,8 @@ def save_model(model, optimizer, epoch):
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict()}, 
                 "training/save_states/state-epoch-{epoch}.tar".format(epoch=epoch))
-    if args.backup-saves:
-        os.system('gsutil cp training/save_states/state-epoch-{epoch}.tar gs://image-colorization-data/'.format(epoch=epoch))
+    if args.backup_saves:
+        os.system('gsutil cp training/save_states/state-epoch-{epoch}.tar gs://image-colorization-bucket/'.format(epoch=epoch))
     print('Model saved as training/save_states/state-epoch-{epoch}.tar'.format(epoch=epoch))
 
 def load_model(model=None, optimizer=None, epoch=None, args=None):
@@ -90,7 +90,8 @@ def load_model(model=None, optimizer=None, epoch=None, args=None):
     else:
         checkpoint = torch.load("training/save_states/state-epoch-{epoch}.tar".format(epoch=epoch), map_location=torch.device('cpu'))
     model.load_state_dict(checkpoint['model_state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    if not args.reset_optimizer: 
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
     print('Model loaded from training/save_states/state-epoch-{epoch}.tar'.format(epoch=epoch))
 
