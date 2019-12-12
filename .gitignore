@@ -6,3 +6,4 @@ training/data/
 training/save_states/
 *.tar
 *.tar.gz
+*.JPEG

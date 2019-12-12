@@ -79,7 +79,7 @@ elif args.mode == 'test':
         out = torch.cat((inp, out.double()), dim=-1).detach().numpy()
         out = skimage.color.lab2rgb(out)
         skimage.io.imsave(file.replace('inputs', 'outputs'), out)
-elif args.mode == 'analyze';
+elif args.mode == 'analyze':
     analyze(args)
 else:
     raise ValueError('--mode should be one of "train" or "test" or "analyze".')
