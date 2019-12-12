@@ -27,7 +27,7 @@ def generate_models(args):
     files = os.listdir("training/save_states")
     matches = map(lambda file: re.search("state-epoch-(.*).tar", file), files)
     well_formed = filter(lambda file: file != None, matches)
-    epochs = list(map(lambda s: int(s.group(1)), well_formed))[::5]
+    epochs = list(map(lambda s: int(s.group(1)), well_formed))
 
     def load_model(epoch):
         if args.use_gpu:
@@ -57,14 +57,12 @@ def analyze_model(model, epoch, args):
 
     print(f"Begin analyzing epoch {epoch}.")
 
-    os.mkdir(f'data/outputs/{epoch}')
-
     model.eval()
 
     data, num_batches = load_data(args)
 
     total_loss = 0
-    for batch_num, batch in enumerate(data, start=1):
+    for batch_num, batch in enumerate(data):
         
         batch = (d.float() for d in batch)
         if args.use_gpu:
@@ -78,10 +76,13 @@ def analyze_model(model, epoch, args):
         loss_val = float(loss_batch)
         total_loss += loss_val
 
-        for inp, out, url in zip(input_batch, outputs_batch, url_batch):
-            out = torch.cat((inp, out.double()), dim=-1).detach().numpy()
-            out = skimage.color.lab2rgb(out)
-            skimage.io.imsave(url.replace('inputs', f'outputs/{epoch}'), out)
+        if batch_num % 10 == 0:
+            if not os.exists(f'data/outputs/{epoch}'):
+                os.mkdir(f'data/outputs/{epoch}')
+            for inp, out, url in zip(input_batch, outputs_batch, url_batch):
+                out = torch.cat((inp, out.double()), dim=-1).detach().numpy()
+                out = skimage.color.lab2rgb(out)
+                skimage.io.imsave(url.replace('inputs', f'outputs/{epoch}'), out)
 
     avg_loss = total_loss / num_batches
 

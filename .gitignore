@@ -4,3 +4,5 @@ __pycache__/
 *$py.class
 training/data/
 training/save_states/
+*.tar
+*.tar.gz
