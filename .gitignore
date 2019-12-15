@@ -3,3 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 training/data/
+training/save_states/
+*.tar
+*.tar.gz
+*.JPEG
